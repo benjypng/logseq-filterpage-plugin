@@ -12,46 +12,24 @@ import {
 import { useCallback } from 'react'
 
 import { THEME } from '../../constants'
-
-interface CustomBlock {
-  content: string
-  page: { id: number }
-  refs: { name: string }[]
-  uuid: string
-}
+import {
+  CustomBlock,
+  MappedRef,
+  mapUuidsToRefs,
+} from '../../services/map-uuids-to-refs'
 
 interface ToggleFiltersProps {
   linkedReferences: CustomBlock[]
 }
 
-const mapToRefUuids = (linkedReferences: CustomBlock[]) => {
-  return linkedReferences.reduce((acc, item) => {
-    if (Array.isArray(item.refs) && item.refs.length > 0) {
-      item.refs.forEach((ref) => {
-        const key = ref.name.toLowerCase()
-        if (!acc[key]) acc[key] = { uuids: [] }
-        acc[key].uuids.push(item.uuid)
-      })
-    } else {
-      // Handle case where refs is empty or not an array
-      const key = 'no_ref'
-      if (!acc[key]) acc[key] = { uuids: [] }
-      acc[key].uuids.push(item.uuid)
-    }
-    return acc
-  }, {})
-}
-
 export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
   // Click to include and right-click to exclude. Click again to remove.
   // Search bar as well
-
-  console.log('Linked References', linkedReferences)
-  console.log('Mapped References', mapToRefUuids(linkedReferences))
+  const mappedRefs: MappedRef = mapUuidsToRefs(linkedReferences)
 
   const handleClick = useCallback(
     // Filter out all other blocks in the page
-    (uuid: string) => {
+    (refKey: string) => {
       // const element = parent.document.querySelector(`[blockid="${uuid}"]`)
       // if (!element) return
       // element.classList.add('filterhidden')
@@ -61,8 +39,15 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
 
   const handleRightClick = useCallback(
     // Filter out only these blocks
-    (uuid: string) => {
-      console.log('right click')
+    (refKey: string) => {
+      const refObj = mappedRefs[refKey]
+      if (!refObj) return
+
+      refObj.uuids.forEach((uuid) => {
+        const element = parent.document.querySelector(`[blockid="${uuid}"]`)
+        if (!element) return
+        element.classList.add('filterhidden')
+      })
     },
     [linkedReferences],
   )
@@ -78,19 +63,24 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
           </Text>
           <Space h="1rem" />
           <Flex gap="0.3rem" wrap="wrap">
-            {linkedReferences &&
-              linkedReferences.map((ref) => (
+            {mappedRefs &&
+              Object.keys(mappedRefs).map((ref) => (
                 <Button
-                  key={ref.uuid}
-                  h="1.5rem"
+                  key={ref}
+                  h="1.8rem"
                   py={0}
                   px="0.4rem"
-                  radius="md"
+                  radius="sm"
                   fz="0.7rem"
-                  onClick={() => handleClick(ref.uuid)}
-                  onContextMenu={() => handleRightClick(ref.uuid)}
+                  onClick={() => handleClick(ref)}
+                  onContextMenu={() => handleRightClick(ref)}
                 >
-                  {ref.content}
+                  {ref}{' '}
+                  <sup>
+                    <Text fz="0.5rem" ml="0.3rem">
+                      {mappedRefs[ref] && mappedRefs[ref].uuids.length}
+                    </Text>
+                  </sup>
                 </Button>
               ))}
           </Flex>

@@ -33,18 +33,27 @@ const main = async () => {
   logseq.provideModel({
     async filterTags() {
       const page = await logseq.Editor.getCurrentPage()
-      if (!page) return
+      if (!page) {
+        logseq.UI.showMsg('Can only be used on a journal or page.', 'error', {
+          timeout: 3000,
+        })
+        return
+      }
+
       let linkedReferences = await logseq.DB.datascriptQuery(
         PAGE_REFERENCE_QUERY,
         page.id,
       )
+
       if (!linkedReferences || linkedReferences.length === 0) {
         logseq.UI.showMsg('No references found', 'warning', { timeout: 3000 })
+        return
       }
 
       linkedReferences = linkedReferences.map(
         (block: BlockEntity[]) => block[0],
       )
+
       root.render(<ToggleFilters linkedReferences={linkedReferences} />)
       logseq.showMainUI()
     },
