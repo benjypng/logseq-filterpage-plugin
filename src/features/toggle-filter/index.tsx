@@ -23,30 +23,38 @@ interface ToggleFiltersProps {
 }
 
 export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
-  // Click to include and right-click to exclude. Click again to remove.
-  // Search bar as well
   const mappedRefs: MappedRef = mapUuidsToRefs(linkedReferences)
 
   const handleClick = useCallback(
-    // Filter out all other blocks in the page
-    (refKey: string) => {
-      // const element = parent.document.querySelector(`[blockid="${uuid}"]`)
-      // if (!element) return
-      // element.classList.add('filterhidden')
-    },
-    [linkedReferences],
-  )
-
-  const handleRightClick = useCallback(
-    // Filter out only these blocks
+    // Show only these blocks
     (refKey: string) => {
       const refObj = mappedRefs[refKey]
       if (!refObj) return
 
       refObj.uuids.forEach((uuid) => {
-        const element = parent.document.querySelector(`[blockid="${uuid}"]`)
-        if (!element) return
-        element.classList.add('filterhidden')
+        const divsToHide = parent.document.querySelectorAll(
+          `div[blockid]:not([blockid="${uuid}"]):not([id="block-content-${uuid}"])`,
+        )
+        console.log(divsToHide)
+        if (!divsToHide) return
+        divsToHide.forEach((element) => element.classList.add('filterhidden'))
+      })
+    },
+    [linkedReferences],
+  )
+
+  const handleRightClick = useCallback(
+    // Hide only these blocks
+    (refKey: string) => {
+      const refObj = mappedRefs[refKey]
+      if (!refObj) return
+
+      refObj.uuids.forEach((uuid) => {
+        const divsToHide = parent.document.querySelectorAll(
+          `.page-blocks-inner div[blockid][blockid="${uuid}"]`,
+        )
+        if (!divsToHide) return
+        divsToHide.forEach((element) => element.classList.add('filterhidden'))
       })
     },
     [linkedReferences],
