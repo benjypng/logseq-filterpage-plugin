@@ -1,12 +1,12 @@
 import '@logseq/libs'
 
+import { BlockEntity } from '@logseq/libs/dist/LSPlugin'
 import { createRoot } from 'react-dom/client'
 
+import { PAGE_REFERENCE_QUERY } from './constants'
+import { ToggleFilters } from './features/toggle-filter'
 import { handlePopup } from './handle-popup'
 import { settings } from './settings'
-import { PAGE_REFERENCE_QUERY } from './constants'
-import { BlockEntity } from '@logseq/libs/dist/LSPlugin'
-import { ToggleFilters } from './features/toggle-filter'
 
 const main = async () => {
   console.log('logseq-filterpage-plugin loaded')
@@ -38,6 +38,10 @@ const main = async () => {
         PAGE_REFERENCE_QUERY,
         page.id,
       )
+      if (!linkedReferences || linkedReferences.length === 0) {
+        logseq.UI.showMsg('No references found', 'warning', { timeout: 3000 })
+      }
+
       linkedReferences = linkedReferences.map(
         (block: BlockEntity[]) => block[0],
       )
