@@ -1,12 +1,22 @@
 import { createTheme } from '@mantine/core'
 
+// export const PAGE_REFERENCE_QUERY = `
+//   [:find (pull ?b [:block/uuid :block/content :block/page {:block/refs [:block/name]}])
+//    :in $ ?page-id
+//    :where
+//     [?b :block/page ?page-id]
+//     [?b :block/refs ?t]
+//   ]
+// `
+
 export const PAGE_REFERENCE_QUERY = `
-  [:find (pull ?b [:block/uuid :block/content :block/page {:block/refs [:block/name]}])
-   :in $ ?page-id
-   :where
-    [?b :block/page ?page-id]
-    [?b :block/refs ?t]
-  ]
+[:find (pull ?b [:block/uuid :block/content :block/page {:block/refs [:block/name]}
+                 {:block/parent ...}])
+ :in $ ?page-id
+ :where
+  [?b :block/page ?page-id]
+  [?b :block/refs ?t]
+]
 `
 
 export const THEME = createTheme({

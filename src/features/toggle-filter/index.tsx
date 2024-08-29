@@ -30,14 +30,14 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
     (refKey: string) => {
       const refObj = mappedRefs[refKey]
       if (!refObj) return
+      console.log(refObj)
 
       refObj.uuids.forEach((uuid) => {
         const divsToHide = parent.document.querySelectorAll(
           `div[blockid]:not([blockid="${uuid}"]):not([id="block-content-${uuid}"])`,
         )
-        console.log(divsToHide)
         if (!divsToHide) return
-        divsToHide.forEach((element) => element.classList.add('filterhidden'))
+        //divsToHide.forEach((element) => element.classList.add('filterhidden'))
       })
     },
     [linkedReferences],

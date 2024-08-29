@@ -7,6 +7,7 @@ import { PAGE_REFERENCE_QUERY } from './constants'
 import { ToggleFilters } from './features/toggle-filter'
 import { handlePopup } from './handle-popup'
 import { settings } from './settings'
+import { CustomBlock } from './services/map-uuids-to-refs'
 
 const main = async () => {
   console.log('logseq-filterpage-plugin loaded')
@@ -51,7 +52,7 @@ const main = async () => {
       }
 
       linkedReferences = linkedReferences.map(
-        (block: BlockEntity[]) => block[0],
+        (block: CustomBlock[]) => block[0],
       )
 
       root.render(<ToggleFilters linkedReferences={linkedReferences} />)
