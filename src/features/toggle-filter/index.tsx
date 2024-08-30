@@ -9,36 +9,37 @@ import {
   Text,
   Title,
 } from '@mantine/core'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 
 import { THEME } from '../../constants'
 import {
-  CustomBlock,
-  MappedRef,
-  mapUuidsToRefs,
-} from '../../services/map-uuids-to-refs'
+  hideOnlySelectedBlocks,
+  showOnlySelectedBlocks,
+} from '../../services/get-divs-to-hide'
+import { CustomBlock, mapUuidsToRefs } from '../../services/map-uuids-to-refs'
 
 interface ToggleFiltersProps {
   linkedReferences: CustomBlock[]
 }
 
 export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
-  const mappedRefs: MappedRef = mapUuidsToRefs(linkedReferences)
+  const mappedRefs = useMemo(
+    () => mapUuidsToRefs(linkedReferences),
+    [linkedReferences],
+  )
 
   const handleClick = useCallback(
     // Show only these blocks
     (refKey: string) => {
       const refObj = mappedRefs[refKey]
       if (!refObj) return
-      console.log(refObj)
 
-      refObj.uuids.forEach((uuid) => {
-        const divsToHide = parent.document.querySelectorAll(
-          `div[blockid]:not([blockid="${uuid}"]):not([id="block-content-${uuid}"])`,
-        )
-        if (!divsToHide) return
-        //divsToHide.forEach((element) => element.classList.add('filterhidden'))
-      })
+      const rootParentsToKeep = refObj.uuids.map((obj) => obj.rootParent)
+
+      const divsToHide = showOnlySelectedBlocks(rootParentsToKeep)
+      if (!divsToHide) return
+
+      divsToHide.forEach((element) => element.classList.add('filterhidden'))
     },
     [linkedReferences],
   )
@@ -49,13 +50,12 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
       const refObj = mappedRefs[refKey]
       if (!refObj) return
 
-      refObj.uuids.forEach((uuid) => {
-        const divsToHide = parent.document.querySelectorAll(
-          `.page-blocks-inner div[blockid][blockid="${uuid}"]`,
-        )
-        if (!divsToHide) return
-        divsToHide.forEach((element) => element.classList.add('filterhidden'))
-      })
+      const rootParentsToHide = refObj.uuids.map((obj) => obj.rootParent)
+
+      const divsToHide = hideOnlySelectedBlocks(rootParentsToHide)
+      if (!divsToHide) return
+
+      divsToHide.forEach((element) => element.classList.add('filterhidden'))
     },
     [linkedReferences],
   )
