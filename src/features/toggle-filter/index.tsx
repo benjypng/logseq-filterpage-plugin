@@ -9,7 +9,7 @@ import {
   Text,
   Title,
 } from '@mantine/core'
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { THEME } from '../../constants'
 import {
@@ -23,6 +23,8 @@ interface ToggleFiltersProps {
 }
 
 export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
+  const [hiddenDivs, setHiddenDivs] = useState<Element[]>([])
+
   const mappedRefs = useMemo(
     () => mapUuidsToRefs(linkedReferences),
     [linkedReferences],
@@ -39,6 +41,7 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
       const divsToHide = showOnlySelectedBlocks(rootParentsToKeep)
       if (!divsToHide) return
 
+      setHiddenDivs((prevValue) => [...prevValue, ...Array.from(divsToHide)])
       divsToHide.forEach((element) => element.classList.add('filterhidden'))
     },
     [linkedReferences],
@@ -55,6 +58,7 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
       const divsToHide = hideOnlySelectedBlocks(rootParentsToHide)
       if (!divsToHide) return
 
+      setHiddenDivs((prevValue) => [...prevValue, ...Array.from(divsToHide)])
       divsToHide.forEach((element) => element.classList.add('filterhidden'))
     },
     [linkedReferences],
