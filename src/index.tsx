@@ -1,13 +1,12 @@
 import '@logseq/libs'
 
-import { BlockEntity } from '@logseq/libs/dist/LSPlugin'
 import { createRoot } from 'react-dom/client'
 
 import { PAGE_REFERENCE_QUERY } from './constants'
 import { ToggleFilters } from './features/toggle-filter'
 import { handlePopup } from './handle-popup'
-import { settings } from './settings'
 import { CustomBlock } from './services/map-uuids-to-refs'
+import { settings } from './settings'
 
 const main = async () => {
   console.log('logseq-filterpage-plugin loaded')
