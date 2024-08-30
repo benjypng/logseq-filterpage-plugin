@@ -4,12 +4,14 @@ import '@mantine/core/styles.css'
 import {
   Button,
   Flex,
+  Input,
   MantineProvider,
   Space,
   Text,
   Title,
 } from '@mantine/core'
 import { useCallback, useMemo, useState } from 'react'
+import { Controller, useForm } from 'react-hook-form'
 
 import { THEME } from '../../constants'
 import {
@@ -22,12 +24,25 @@ interface ToggleFiltersProps {
   linkedReferences: CustomBlock[]
 }
 
+interface FormInputs {
+  filter: string
+}
+
 export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
   const [hiddenDivs, setHiddenDivs] = useState<Element[]>([])
+  const { control, watch } = useForm<FormInputs>({
+    defaultValues: {
+      filter: '',
+    },
+  })
 
   const mappedRefs = useMemo(
     () => mapUuidsToRefs(linkedReferences),
     [linkedReferences],
+  )
+
+  const refsDisplay = Object.keys(mappedRefs).filter((ref) =>
+    ref.includes(watch('filter')),
   )
 
   const handleClick = useCallback(
@@ -74,9 +89,17 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
             filter out blocks with this reference.
           </Text>
           <Space h="1rem" />
+          <Controller
+            name="filter"
+            control={control}
+            render={({ field }) => (
+              <Input {...field} placeholder="Filter" size="xs" />
+            )}
+          />
+          <Space h="1rem" />
           <Flex gap="0.3rem" wrap="wrap">
             {mappedRefs &&
-              Object.keys(mappedRefs).map((ref) => (
+              refsDisplay.map((ref) => (
                 <Button
                   key={ref}
                   h="1.8rem"
