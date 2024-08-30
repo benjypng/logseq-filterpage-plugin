@@ -56,7 +56,7 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
       const divsToHide = showOnlySelectedBlocks(rootParentsToKeep)
       if (!divsToHide) return
 
-      setHiddenDivs((prevValue) => [...prevValue, ...Array.from(divsToHide)])
+      setHiddenDivs((prevValue) => [...prevValue, ...divsToHide])
       divsToHide.forEach((element) => element.classList.add('filterhidden'))
     },
     [linkedReferences],
@@ -73,11 +73,16 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
       const divsToHide = hideOnlySelectedBlocks(rootParentsToHide)
       if (!divsToHide) return
 
-      setHiddenDivs((prevValue) => [...prevValue, ...Array.from(divsToHide)])
+      setHiddenDivs((prevValue) => [...prevValue, ...divsToHide])
       divsToHide.forEach((element) => element.classList.add('filterhidden'))
     },
     [linkedReferences],
   )
+
+  const unhideAll = useCallback(() => {
+    console.log(hiddenDivs)
+    //hiddenDivs.forEach((element) => element.classList.remove('filterhidden'))
+  }, [linkedReferences])
 
   return (
     <MantineProvider theme={THEME}>
@@ -88,6 +93,9 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
             Click to filter only blocks with this reference, and right-click to
             filter out blocks with this reference.
           </Text>
+          <Space h="1rem" />
+          <Title fz="xs">Includes</Title>
+          <Title fz="xs">Excludes</Title>
           <Space h="1rem" />
           <Controller
             name="filter"
@@ -119,6 +127,9 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
                 </Button>
               ))}
           </Flex>
+          <Button color="red" size="compact-xs" mt="md" onClick={unhideAll}>
+            Reset
+          </Button>
         </Flex>
       </Flex>
     </MantineProvider>
