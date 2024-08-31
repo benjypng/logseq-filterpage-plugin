@@ -29,7 +29,11 @@ interface FormInputs {
 }
 
 export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
-  const [selectRef, setSelectRef] = useState<string | null>()
+  const [selectRef, setSelectRef] = useState<{
+    refKey: string
+    rootUuids: string[]
+    flag: 'show' | 'hide'
+  } | null>()
   const { control, watch } = useForm<FormInputs>({
     defaultValues: {
       filter: '',
@@ -56,14 +60,18 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
     })
   }
 
-  const handleClick = useCallback(
+  const showOnlyTheseRefs = useCallback(
     // Show only these blocks
     (refKey: string) => {
       const refObj = mappedRefs[refKey]
       if (!refObj) return
-      setSelectRef(refKey)
 
       const rootParentsToKeep = refObj.uuids.map((obj) => obj.rootParent)
+      setSelectRef({
+        refKey,
+        rootUuids: rootParentsToKeep,
+        flag: 'show',
+      })
 
       const divsToHide = showOnlySelectedBlocks(rootParentsToKeep)
       if (!divsToHide) return
@@ -73,14 +81,18 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
     [linkedReferences],
   )
 
-  const handleRightClick = useCallback(
+  const hideOnlyTheseRefs = useCallback(
     // Hide only these blocks
     (refKey: string) => {
       const refObj = mappedRefs[refKey]
       if (!refObj) return
-      setSelectRef(refKey)
 
       const rootParentsToHide = refObj.uuids.map((obj) => obj.rootParent)
+      setSelectRef({
+        refKey,
+        rootUuids: rootParentsToHide,
+        flag: 'hide',
+      })
 
       const divsToHide = hideOnlySelectedBlocks(rootParentsToHide)
       if (!divsToHide) return
@@ -89,6 +101,18 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
     },
     [linkedReferences],
   )
+
+  const reset = () => {
+    let divsToToggle
+    if (selectRef?.flag === 'hide') {
+      divsToToggle = hideOnlySelectedBlocks(selectRef.rootUuids)
+    }
+    if (selectRef?.flag === 'show') {
+      divsToToggle = showOnlySelectedBlocks(selectRef.rootUuids)
+    }
+    if (!divsToToggle) return
+    toggleFilteredDivs(divsToToggle)
+  }
 
   return (
     <MantineProvider theme={THEME}>
@@ -103,18 +127,22 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
         >
           <Title fz="md">Toggle References</Title>
           <Text fz="xs">
-            Click to filter only blocks with this reference, and right-click to
-            filter out blocks with this reference.
+            Click to filter only blocks with this reference, and cmd/ctrl+click
+            to filter out blocks with this reference. Click again to toggle.
           </Text>
           <Space h="1rem" />
-          <Controller
-            name="filter"
-            control={control}
-            render={({ field }) => (
-              <Input {...field} placeholder="Filter" size="xs" />
-            )}
-          />
-          <Space h="1rem" />
+          {!selectRef && (
+            <>
+              <Controller
+                name="filter"
+                control={control}
+                render={({ field }) => (
+                  <Input {...field} placeholder="Filter" size="xs" />
+                )}
+              />
+              <Space h="1rem" />
+            </>
+          )}
           <Flex gap="0.3rem" wrap="wrap">
             {mappedRefs &&
               refsDisplay.map((ref) => (
@@ -125,9 +153,20 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
                   px="0.4rem"
                   radius="sm"
                   fz="0.7rem"
-                  onClick={() => handleClick(ref)}
-                  onContextMenu={() => handleRightClick(ref)}
-                  variant={ref === selectRef ? 'filled' : 'outline'}
+                  onClick={(e) => {
+                    if (selectRef) {
+                      reset()
+                    } else if (e.metaKey || e.ctrlKey) {
+                      hideOnlyTheseRefs(ref)
+                    } else {
+                      showOnlyTheseRefs(ref)
+                    }
+                  }}
+                  variant={ref === selectRef?.refKey ? 'filled' : 'outline'}
+                  style={{
+                    display:
+                      selectRef && selectRef.refKey !== ref ? 'none' : 'block',
+                  }}
                 >
                   {ref}{' '}
                   <sup>
