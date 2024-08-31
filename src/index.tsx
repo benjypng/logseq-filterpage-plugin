@@ -1,11 +1,11 @@
 import '@logseq/libs'
 
-import { BlockEntity } from '@logseq/libs/dist/LSPlugin'
 import { createRoot } from 'react-dom/client'
 
 import { PAGE_REFERENCE_QUERY } from './constants'
 import { ToggleFilters } from './features/toggle-filter'
 import { handlePopup } from './handle-popup'
+import { CustomBlock } from './services/map-uuids-to-refs'
 import { settings } from './settings'
 
 const main = async () => {
@@ -33,18 +33,27 @@ const main = async () => {
   logseq.provideModel({
     async filterTags() {
       const page = await logseq.Editor.getCurrentPage()
-      if (!page) return
+      if (!page) {
+        logseq.UI.showMsg('Can only be used on a journal or page.', 'error', {
+          timeout: 3000,
+        })
+        return
+      }
+
       let linkedReferences = await logseq.DB.datascriptQuery(
         PAGE_REFERENCE_QUERY,
         page.id,
       )
+
       if (!linkedReferences || linkedReferences.length === 0) {
         logseq.UI.showMsg('No references found', 'warning', { timeout: 3000 })
+        return
       }
 
       linkedReferences = linkedReferences.map(
-        (block: BlockEntity[]) => block[0],
+        (block: CustomBlock[]) => block[0],
       )
+
       root.render(<ToggleFilters linkedReferences={linkedReferences} />)
       logseq.showMainUI()
     },
