@@ -1,5 +1,4 @@
-![Logseq Badge](https://img.shields.io/badge/logseq-%2385C8C8?style=for-the-badge&logo=logseq&logoColor=black) ![GitHub Repo stars](https://img.shields.io/github/stars/benjypng/logseq-filterpage-plugin?style=for-the-badge) ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/benjypng/logseq-filterpage-plugin/total?style=for-the-badge)
-
+![Logseq Badge](https://img.shields.io/badge/logseq-%2385C8C8?style=for-the-badge&logo=logseq&logoColor=black)
 # Overview
 
 Quickly filter the current page based on tags that you want to include or exclude.
