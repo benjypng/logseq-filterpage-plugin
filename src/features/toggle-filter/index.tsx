@@ -29,7 +29,7 @@ interface FormInputs {
 }
 
 export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
-  const [hiddenDivs, setHiddenDivs] = useState<Element[]>([])
+  const [selectRef, setSelectRef] = useState<string | null>()
   const { control, watch } = useForm<FormInputs>({
     defaultValues: {
       filter: '',
@@ -45,19 +45,30 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
     ref.includes(watch('filter')),
   )
 
+  const toggleFilteredDivs = (divs: NodeListOf<Element>) => {
+    divs.forEach((div) => {
+      if (div.classList.contains('filterhidden')) {
+        div.classList.remove('filterhidden')
+        setSelectRef(null)
+      } else {
+        div.classList.add('filterhidden')
+      }
+    })
+  }
+
   const handleClick = useCallback(
     // Show only these blocks
     (refKey: string) => {
       const refObj = mappedRefs[refKey]
       if (!refObj) return
+      setSelectRef(refKey)
 
       const rootParentsToKeep = refObj.uuids.map((obj) => obj.rootParent)
 
       const divsToHide = showOnlySelectedBlocks(rootParentsToKeep)
       if (!divsToHide) return
 
-      setHiddenDivs((prevValue) => [...prevValue, ...divsToHide])
-      divsToHide.forEach((element) => element.classList.add('filterhidden'))
+      toggleFilteredDivs(divsToHide)
     },
     [linkedReferences],
   )
@@ -67,35 +78,34 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
     (refKey: string) => {
       const refObj = mappedRefs[refKey]
       if (!refObj) return
+      setSelectRef(refKey)
 
       const rootParentsToHide = refObj.uuids.map((obj) => obj.rootParent)
 
       const divsToHide = hideOnlySelectedBlocks(rootParentsToHide)
       if (!divsToHide) return
 
-      setHiddenDivs((prevValue) => [...prevValue, ...divsToHide])
-      divsToHide.forEach((element) => element.classList.add('filterhidden'))
+      toggleFilteredDivs(divsToHide)
     },
     [linkedReferences],
   )
 
-  const unhideAll = useCallback(() => {
-    console.log(hiddenDivs)
-    //hiddenDivs.forEach((element) => element.classList.remove('filterhidden'))
-  }, [linkedReferences])
-
   return (
     <MantineProvider theme={THEME}>
       <Flex bg="none" justify="right" p="md">
-        <Flex p="md" mt="xl" bg="white" w="20rem" direction="column">
+        <Flex
+          p="md"
+          mt="xl"
+          bg="white"
+          w="20rem"
+          direction="column"
+          id="filter-page-container"
+        >
           <Title fz="md">Toggle References</Title>
           <Text fz="xs">
             Click to filter only blocks with this reference, and right-click to
             filter out blocks with this reference.
           </Text>
-          <Space h="1rem" />
-          <Title fz="xs">Includes</Title>
-          <Title fz="xs">Excludes</Title>
           <Space h="1rem" />
           <Controller
             name="filter"
@@ -117,6 +127,7 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
                   fz="0.7rem"
                   onClick={() => handleClick(ref)}
                   onContextMenu={() => handleRightClick(ref)}
+                  variant={ref === selectRef ? 'filled' : 'outline'}
                 >
                   {ref}{' '}
                   <sup>
@@ -127,9 +138,6 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
                 </Button>
               ))}
           </Flex>
-          <Button color="red" size="compact-xs" mt="md" onClick={unhideAll}>
-            Reset
-          </Button>
         </Flex>
       </Flex>
     </MantineProvider>

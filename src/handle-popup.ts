@@ -12,7 +12,7 @@ export const handlePopup = () => {
   )
   // Click outside to close pop-up
   document.addEventListener('click', (e) => {
-    if (!(e.target as HTMLElement).closest('body')) {
+    if (!(e.target as HTMLElement).closest('#filter-page-container')) {
       logseq.hideMainUI({ restoreEditingCursor: true })
     }
     e.stopPropagation()
