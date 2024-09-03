@@ -40,6 +40,11 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
     },
   })
 
+  logseq.App.onRouteChanged(() => {
+    reset()
+    setSelectRef(null)
+  })
+
   const mappedRefs = useMemo(
     () => mapUuidsToRefs(linkedReferences),
     [linkedReferences],
