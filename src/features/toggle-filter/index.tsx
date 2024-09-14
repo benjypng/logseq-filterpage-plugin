@@ -43,6 +43,10 @@ export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
   logseq.App.onRouteChanged(() => {
     reset()
     setSelectRef(null)
+    const containerEl = parent.document.querySelector('.blocks-container')
+    if (!containerEl) return
+    const hiddenEls = containerEl.querySelectorAll('.filterhidden')
+    toggleFilteredDivs(hiddenEls)
   })
 
   const mappedRefs = useMemo(
