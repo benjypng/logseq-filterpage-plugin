@@ -10,10 +10,10 @@
     "main": "dist/index.html"
   },
   "scripts": {
-    "dev": "npx vite",
-    "build": "npx eslint . --fix && npx tsc && npx vite build",
-    "preview": "npx vite preview",
-    "prepare": "husky"
+    "dev": "bunx vite",
+    "build": "bunx vite build",
+    "prepare": "husky",
+    "lint:precommit": "echo \"Running biome\" && bunx biome check . --write && echo \"Running tsc\" && tsc --noEmit"
   },
   "release": {
     "branches": [
@@ -32,33 +32,17 @@
   },
   "dependencies": {
     "@logseq/libs": "^0.0.17",
-    "@mantine/core": "^7.12.1",
-    "@mantine/hooks": "^7.12.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.53.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.9.1",
-    "@types/eslint": "^9.6.0",
-    "@types/eslint-config-prettier": "^6.11.3",
-    "@types/eslint__js": "^8.42.3",
+    "@biomejs/biome": "2.4.15",
     "@types/node": "^22.5.0",
     "@types/react": "^18.3.4",
     "@types/react-dom": "^18.3.0",
-    "@typescript-eslint/eslint-plugin": "^8.2.0",
-    "@typescript-eslint/parser": "^8.2.0",
-    "eslint": "^9.9.1",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-prettier": "^5.2.1",
-    "eslint-plugin-simple-import-sort": "^12.1.1",
     "husky": "^9.1.5",
-    "postcss": "^8.4.41",
-    "postcss-preset-mantine": "^1.17.0",
-    "postcss-simple-vars": "^7.0.1",
-    "prettier": "^3.3.3",
     "typescript": "^5.5.4",
-    "typescript-eslint": "^8.2.0",
     "vite": "^5.4.2",
     "vite-plugin-logseq": "^1.1.2",
     "vite-tsconfig-paths": "^5.0.1"
