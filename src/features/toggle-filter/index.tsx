@@ -3,18 +3,29 @@ import './style.css'
 import { useEffect, useState } from 'react'
 
 import { NOT_A_PAGE_MESSAGE } from '../../constants'
-import { PageReferences, ThemeMode } from '../../types'
+import {
+  PageReferences,
+  TaskBucket,
+  TaskFilter,
+  TaskRootUuids,
+  ThemeMode,
+} from '../../types'
 import {
   applyRefFilter,
+  groupTaskRootUuids,
   groupUuidsByTitle,
   onThemeModeChanged,
   onUiVisibleChanged,
 } from './utils'
 
+const EMPTY_TASK_ROOTS: TaskRootUuids = { todo: new Set(), done: new Set() }
+
 export const ToggleFilters = () => {
   const [pageReferences, setPageReferences] = useState<PageReferences>({})
   const [selectedRefs, setSelectedRefs] = useState<Set<string>>(new Set())
   const [rootUuids, setRootUuids] = useState<string[]>([])
+  const [taskRoots, setTaskRoots] = useState<TaskRootUuids>(EMPTY_TASK_ROOTS)
+  const [taskFilter, setTaskFilter] = useState<TaskFilter>(null)
   const [filter, setFilter] = useState('')
   const [themeMode, setThemeMode] = useState<ThemeMode>('light')
 
@@ -26,6 +37,7 @@ export const ToggleFilters = () => {
     }
     setRootUuids(currentPbt.filter(Boolean).map((block) => block.uuid))
     setPageReferences(await groupUuidsByTitle(currentPbt))
+    setTaskRoots(await groupTaskRootUuids(currentPbt))
     setFilter('')
   }
 
@@ -38,6 +50,7 @@ export const ToggleFilters = () => {
   useEffect(() => {
     const offRouteChanged = logseq.App.onRouteChanged(() => {
       setSelectedRefs(new Set())
+      setTaskFilter(null)
     })
     return offRouteChanged
   }, [])
@@ -58,13 +71,24 @@ export const ToggleFilters = () => {
   )
   const isFiltering = selectedRefs.size > 0 && keepUuids.size > 0
 
+  const taskHiddenRoots =
+    taskFilter === 'todo'
+      ? new Set([...taskRoots.done].filter((uuid) => !taskRoots.todo.has(uuid)))
+      : taskFilter === 'done'
+        ? new Set(
+            [...taskRoots.todo].filter((uuid) => !taskRoots.done.has(uuid)),
+          )
+        : new Set<string>()
+
+  const hiddenUuids = rootUuids.filter(
+    (uuid) =>
+      (isFiltering && !keepUuids.has(uuid)) || taskHiddenRoots.has(uuid),
+  )
+  const hiddenSet = new Set(hiddenUuids)
+
   useEffect(() => {
-    if (!isFiltering) {
-      applyRefFilter([])
-      return
-    }
-    applyRefFilter(rootUuids.filter((uuid) => !keepUuids.has(uuid)))
-  }, [selectedRefs, pageReferences, rootUuids])
+    applyRefFilter(hiddenUuids)
+  }, [selectedRefs, pageReferences, rootUuids, taskFilter, taskRoots])
 
   const toggleRef = (title: string) => {
     setSelectedRefs((prev) => {
@@ -78,11 +102,21 @@ export const ToggleFilters = () => {
     })
   }
 
+  const toggleTaskFilter = (bucket: TaskBucket) => {
+    setTaskFilter((prev) => (prev === bucket ? null : bucket))
+  }
+
   const visibleUuidCount = (title: string) => {
     const uuids = pageReferences[title] ?? []
-    if (!isFiltering) return uuids.length
-    return uuids.filter((uuid) => keepUuids.has(uuid)).length
+    return uuids.filter((uuid) => !hiddenSet.has(uuid)).length
   }
+
+  const refVisibleRoots = new Set(
+    rootUuids.filter((uuid) => !isFiltering || keepUuids.has(uuid)),
+  )
+  const taskCount = (bucket: TaskBucket) =>
+    [...taskRoots[bucket]].filter((uuid) => refVisibleRoots.has(uuid)).length
+  const hasTasks = taskRoots.todo.size + taskRoots.done.size > 0
 
   const titles = Object.keys(pageReferences)
     .filter((title) => visibleUuidCount(title) > 0)
@@ -122,6 +156,34 @@ export const ToggleFilters = () => {
             </button>
           ))}
         </div>
+        {hasTasks && (
+          <div className="filter-page-tasks">
+            <h2 className="filter-page-section-title">Tasks</h2>
+            <p className="filter-page-description">
+              Show only blocks with todo or done tasks. Blocks without tasks are
+              not affected.
+            </p>
+            <div className="filter-page-refs">
+              {(['todo', 'done'] as const).map((bucket) => (
+                <button
+                  key={bucket}
+                  type="button"
+                  className={
+                    taskFilter === bucket
+                      ? 'filter-page-ref filled'
+                      : 'filter-page-ref'
+                  }
+                  onClick={() => toggleTaskFilter(bucket)}
+                >
+                  {bucket === 'todo' ? 'Todo' : 'Done'}{' '}
+                  <sup className="filter-page-ref-count">
+                    {taskCount(bucket)}
+                  </sup>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

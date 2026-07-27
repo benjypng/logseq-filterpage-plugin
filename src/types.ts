@@ -9,3 +9,12 @@ export interface VisibilityChangedEvent {
 }
 
 export type ThemeMode = 'light' | 'dark'
+
+export type TaskBucket = 'todo' | 'done'
+
+export type TaskFilter = TaskBucket | null
+
+export interface TaskRootUuids {
+  todo: Set<string>
+  done: Set<string>
+}
