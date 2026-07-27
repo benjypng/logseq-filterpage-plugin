@@ -1,193 +1,128 @@
 import './style.css'
-import '@mantine/core/styles.css'
 
+import { useEffect, useState } from 'react'
+
+import { NOT_A_PAGE_MESSAGE } from '../../constants'
+import { PageReferences, ThemeMode } from '../../types'
 import {
-  Button,
-  Flex,
-  Input,
-  MantineProvider,
-  Space,
-  Text,
-  Title,
-} from '@mantine/core'
-import { useCallback, useMemo, useState } from 'react'
-import { Controller, useForm } from 'react-hook-form'
+  applyRefFilter,
+  groupUuidsByTitle,
+  onThemeModeChanged,
+  onUiVisibleChanged,
+} from './utils'
 
-import { THEME } from '../../constants'
-import {
-  hideOnlySelectedBlocks,
-  showOnlySelectedBlocks,
-} from '../../services/get-divs-to-hide'
-import { CustomBlock, mapUuidsToRefs } from '../../services/map-uuids-to-refs'
+export const ToggleFilters = () => {
+  const [pageReferences, setPageReferences] = useState<PageReferences>({})
+  const [selectedRefs, setSelectedRefs] = useState<Set<string>>(new Set())
+  const [rootUuids, setRootUuids] = useState<string[]>([])
+  const [filter, setFilter] = useState('')
+  const [themeMode, setThemeMode] = useState<ThemeMode>('light')
 
-interface ToggleFiltersProps {
-  linkedReferences: CustomBlock[]
-}
+  const getPageReferences = async () => {
+    const currentPbt = await logseq.Editor.getCurrentPageBlocksTree()
+    if (!currentPbt) {
+      logseq.UI.showMsg(NOT_A_PAGE_MESSAGE, 'error')
+      return
+    }
+    setRootUuids(currentPbt.filter(Boolean).map((block) => block.uuid))
+    setPageReferences(await groupUuidsByTitle(currentPbt))
+    setFilter('')
+  }
 
-interface FormInputs {
-  filter: string
-}
+  useEffect(() => {
+    return onUiVisibleChanged((visible) => {
+      if (visible) getPageReferences()
+    })
+  }, [])
 
-export const ToggleFilters = ({ linkedReferences }: ToggleFiltersProps) => {
-  const [selectRef, setSelectRef] = useState<{
-    refKey: string
-    rootUuids: string[]
-    flag: 'show' | 'hide'
-  } | null>()
-  const { control, watch } = useForm<FormInputs>({
-    defaultValues: {
-      filter: '',
-    },
-  })
+  useEffect(() => {
+    const offRouteChanged = logseq.App.onRouteChanged(() => {
+      setSelectedRefs(new Set())
+    })
+    return offRouteChanged
+  }, [])
 
-  logseq.App.onRouteChanged(() => {
-    reset()
-    setSelectRef(null)
-    const containerEl = parent.document.querySelector('.blocks-container')
-    if (!containerEl) return
-    const hiddenEls = containerEl.querySelectorAll('.filterhidden')
-    toggleFilteredDivs(hiddenEls)
-  })
+  useEffect(() => {
+    logseq.App.getUserConfigs().then((configs) => {
+      setThemeMode(configs.preferredThemeMode === 'dark' ? 'dark' : 'light')
+    })
+    return onThemeModeChanged(setThemeMode)
+  }, [])
 
-  const mappedRefs = useMemo(
-    () => mapUuidsToRefs(linkedReferences),
-    [linkedReferences],
+  const selectedUuidLists = [...selectedRefs].map(
+    (title) => pageReferences[title] ?? [],
   )
-
-  const refsDisplay = Object.keys(mappedRefs).filter((ref) =>
-    ref.includes(watch('filter')),
+  const keepUuids = selectedUuidLists.reduce(
+    (acc, uuids) => new Set(uuids.filter((uuid) => acc.has(uuid))),
+    new Set(selectedUuidLists[0] ?? []),
   )
+  const isFiltering = selectedRefs.size > 0 && keepUuids.size > 0
 
-  const toggleFilteredDivs = (divs: NodeListOf<Element>) => {
-    divs.forEach((div) => {
-      if (div.classList.contains('filterhidden')) {
-        div.classList.remove('filterhidden')
-        setSelectRef(null)
+  useEffect(() => {
+    if (!isFiltering) {
+      applyRefFilter([])
+      return
+    }
+    applyRefFilter(rootUuids.filter((uuid) => !keepUuids.has(uuid)))
+  }, [selectedRefs, pageReferences, rootUuids])
+
+  const toggleRef = (title: string) => {
+    setSelectedRefs((prev) => {
+      const next = new Set(prev)
+      if (next.has(title)) {
+        next.delete(title)
       } else {
-        div.classList.add('filterhidden')
+        next.add(title)
       }
+      return next
     })
   }
 
-  const showOnlyTheseRefs = useCallback(
-    // Show only these blocks
-    (refKey: string) => {
-      const refObj = mappedRefs[refKey]
-      if (!refObj) return
-
-      const rootParentsToKeep = refObj.uuids.map((obj) => obj.rootParent)
-      setSelectRef({
-        refKey,
-        rootUuids: rootParentsToKeep,
-        flag: 'show',
-      })
-
-      const divsToHide = showOnlySelectedBlocks(rootParentsToKeep)
-      if (!divsToHide) return
-
-      toggleFilteredDivs(divsToHide)
-    },
-    [linkedReferences],
-  )
-
-  const hideOnlyTheseRefs = useCallback(
-    // Hide only these blocks
-    (refKey: string) => {
-      const refObj = mappedRefs[refKey]
-      if (!refObj) return
-
-      const rootParentsToHide = refObj.uuids.map((obj) => obj.rootParent)
-      setSelectRef({
-        refKey,
-        rootUuids: rootParentsToHide,
-        flag: 'hide',
-      })
-
-      const divsToHide = hideOnlySelectedBlocks(rootParentsToHide)
-      if (!divsToHide) return
-
-      toggleFilteredDivs(divsToHide)
-    },
-    [linkedReferences],
-  )
-
-  const reset = () => {
-    let divsToToggle
-    if (selectRef?.flag === 'hide') {
-      divsToToggle = hideOnlySelectedBlocks(selectRef.rootUuids)
-    }
-    if (selectRef?.flag === 'show') {
-      divsToToggle = showOnlySelectedBlocks(selectRef.rootUuids)
-    }
-    if (!divsToToggle) return
-    toggleFilteredDivs(divsToToggle)
+  const visibleUuidCount = (title: string) => {
+    const uuids = pageReferences[title] ?? []
+    if (!isFiltering) return uuids.length
+    return uuids.filter((uuid) => keepUuids.has(uuid)).length
   }
 
+  const titles = Object.keys(pageReferences)
+    .filter((title) => visibleUuidCount(title) > 0)
+    .sort((a, b) => a.localeCompare(b))
+    .filter((title) => title.toLowerCase().includes(filter.toLowerCase()))
+
   return (
-    <MantineProvider theme={THEME}>
-      <Flex bg="none" justify="right" p="md">
-        <Flex
-          p="md"
-          mt="xl"
-          bg="white"
-          w="20rem"
-          direction="column"
-          id="filter-page-container"
-        >
-          <Title fz="md">Toggle References</Title>
-          <Text fz="xs">
-            Click to filter only blocks with this reference, and cmd/ctrl+click
-            to filter out blocks with this reference. Click again to toggle.
-          </Text>
-          <Space h="1rem" />
-          {!selectRef && (
-            <>
-              <Controller
-                name="filter"
-                control={control}
-                render={({ field }) => (
-                  <Input {...field} placeholder="Filter" size="xs" />
-                )}
-              />
-              <Space h="1rem" />
-            </>
-          )}
-          <Flex gap="0.3rem" wrap="wrap">
-            {mappedRefs &&
-              refsDisplay.map((ref) => (
-                <Button
-                  key={ref}
-                  h="1.8rem"
-                  py={0}
-                  px="0.4rem"
-                  radius="sm"
-                  fz="0.7rem"
-                  onClick={(e) => {
-                    if (selectRef) {
-                      reset()
-                    } else if (e.metaKey || e.ctrlKey) {
-                      hideOnlyTheseRefs(ref)
-                    } else {
-                      showOnlyTheseRefs(ref)
-                    }
-                  }}
-                  variant={ref === selectRef?.refKey ? 'filled' : 'outline'}
-                  style={{
-                    display:
-                      selectRef && selectRef.refKey !== ref ? 'none' : 'block',
-                  }}
-                >
-                  {ref}{' '}
-                  <sup>
-                    <Text fz="0.5rem" ml="0.3rem">
-                      {mappedRefs[ref] && mappedRefs[ref].uuids.length}
-                    </Text>
-                  </sup>
-                </Button>
-              ))}
-          </Flex>
-        </Flex>
-      </Flex>
-    </MantineProvider>
+    <div className="filter-page-overlay">
+      <div id="filter-page-container" className={themeMode}>
+        <h1 className="filter-page-title">Toggle References</h1>
+        <p className="filter-page-description">
+          Click a reference to show only blocks with that reference. Select more
+          references to narrow the filter, and click again to deselect.
+        </p>
+        <input
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          placeholder="Filter"
+          className="filter-page-input"
+        />
+        <div className="filter-page-refs">
+          {titles.map((title) => (
+            <button
+              key={title}
+              type="button"
+              className={
+                selectedRefs.has(title)
+                  ? 'filter-page-ref filled'
+                  : 'filter-page-ref'
+              }
+              onClick={() => toggleRef(title)}
+            >
+              {title}{' '}
+              <sup className="filter-page-ref-count">
+                {visibleUuidCount(title)}
+              </sup>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }
