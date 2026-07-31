@@ -1,5 +1,6 @@
 export * from './apply-ref-filter'
 export * from './group-task-roots'
 export * from './group-uuids'
+export * from './match-text-roots'
 export * from './on-theme-mode-changed'
 export * from './on-ui-visible-changed'
